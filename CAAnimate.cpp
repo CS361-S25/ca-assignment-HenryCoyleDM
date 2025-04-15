@@ -38,6 +38,7 @@ public:
         cells.resize(num_w_boxes, std::vector<FloatPair>(num_h_boxes, FloatPair(0, 0)));
         next_generation.resize(num_w_boxes, std::vector<FloatPair>(num_h_boxes, FloatPair(0, 0)));
 
+        // initialize the state
         AddRandomCells();
     }
 
@@ -46,18 +47,15 @@ public:
 
         for (int x = 0; x < num_w_boxes; x++){
              for (int y = 0; y < num_h_boxes; y++) {
-
                 // draw a rectange with black strokes and filled with the cell's amount of yellow and blue
                 canvas.Rect(x * RECT_SIDE, y * RECT_SIDE, RECT_SIDE, RECT_SIDE, emp::ColorRGB(cells[x][y].yellow * 255, cells[x][y].yellow * 255, cells[x][y].blue * 255), "black");
-                
-                
             }
         }
 
         // update all cell values using update rules
         ComputeNextGeneration();
         UpdateGridFromNextGeneration();
-        // this update rule typically leads to interesting structures with a period of 2, so I apply the rule twice to 
+        // this update rule typically leads to interesting structures with a period of 2, so I apply the rule twice per frame to 
         // reduce flashing and make the structures clearer
         ComputeNextGeneration();
         UpdateGridFromNextGeneration();
@@ -69,7 +67,12 @@ public:
         return cells[emp::Mod(x, num_w_boxes)][emp::Mod(y, num_h_boxes)];
     }
 
-    // a cell is considered an alive neighbor if it differs in each coordinate from (x, y) by at most 1 and has either its
+    // a cell is considered alive if either its blue or yellow values are at least 0.5
+    bool IsAlive(int x, int y) {
+        return GetCell(x, y).blue > 0.5 || GetCell(x, y).yellow > 0.5;
+    }
+
+    // a cell is considered an alive neighbor of (x, y) if it differs in each coordinate from (x, y) by at most 1 and has either its
     // blue value or its yellow value at least 0.5
     int NumberOfAliveNeighbors(int x, int y) {
         int count = 0;
@@ -84,7 +87,7 @@ public:
         return count;
     }
 
-    // the average blue and yellow values of neighboring cells that are alive
+    // the average blue and yellow values of neighboring cells to (x, y) that are alive
     FloatPair AverageOfAliveNeighbors(int x, int y) {
         int number_of_alive_neighbors = 0;
         float total_blue = 0.0;
@@ -147,12 +150,9 @@ public:
         return FloatPair(best_blue, best_yellow);
     }
 
-    // a cell is considered alive if either its blue or yellow values are at least 0.5
-    bool IsAlive(int x, int y) {
-        return GetCell(x, y).blue > 0.5 || GetCell(x, y).yellow > 0.5;
-    }
+    
 
-    // apply the update rule to each cell to determine what it will be in the next generation
+    // apply the update rule to each cell to determine its value in the next generation
     void ComputeNextGeneration() {
         for (int x=0; x<num_w_boxes; x++) {
             for (int y=0; y<num_h_boxes; y++) {
@@ -190,6 +190,7 @@ public:
     }
 
     // the update function for Conway's Game of Life
+    // cells must have int values, not FloatPair
     int LifeUpdateFunction(int x, int y) {
         int number_of_alive_neighbors = NumberOfAliveNeighbors(x, y);
         bool is_alive = IsAlive(x, y);
